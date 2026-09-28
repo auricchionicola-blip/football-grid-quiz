@@ -8,32 +8,41 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
 
-    if (!query || query.length < 2) {
+    if (!query || query.trim().length < 2) {
       return NextResponse.json({ players: [] });
     }
 
-    const supabaseUrl = process.env.SUPABASE_URL || '';
-    const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("Supabase keys missing!");
+      return NextResponse.json({ players: [], error: "Missing env vars" });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Cerca tra i calciatori importati dal CSV di Transfermarkt
+    // Cerca la stringa sia nella colonna 'player' che nella colonna 'name'
     const { data, error } = await supabase
       .from('players')
-      .select('tmid, player, nationality')
-      .ilike('player', `%${query}%`)
+      .select('*')
+      .or(`player.ilike.%${query}%,name.ilike.%${query}%`)
       .limit(10);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase error:", error);
+      throw error;
+    }
 
-    // Formattazione coerente per il frontend
     const players = (data || []).map((p) => ({
-      id: p.tmid,
-      name: p.player,
-      nationality: p.nationality
+      id: p.tmid || p.player_id || p.id,
+      name: p.player || p.name || 'Sconosciuto',
+      nationality: p.nationality || ''
     }));
 
     return NextResponse.json({ players });
-  } catch {
+  } catch (err) {
+    console.error("API Route Error:", err);
     return NextResponse.json({ players: [] }, { status: 500 });
   }
 }
