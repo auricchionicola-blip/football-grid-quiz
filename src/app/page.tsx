@@ -25,7 +25,6 @@ export default function FootballGridGame() {
   const [lives, setLives] = useState(9);
   const [score, setScore] = useState(0);
 
-  // Ricerca in tempo reale su Supabase
   const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -90,7 +89,7 @@ export default function FootballGridGame() {
             <span className="text-2xl">🏆</span>
             <div>
               <h1 className="text-base font-bold leading-none">Footy Grid Quiz</h1>
-              <span className="text-[10px] text-emerald-200">DATABASE COMPLETO</span>
+              <span className="text-[10px] text-emerald-200">DATABASE REAL-TIME</span>
             </div>
           </div>
           <button 
