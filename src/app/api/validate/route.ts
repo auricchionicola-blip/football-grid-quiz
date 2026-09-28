@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   try {
     const { playerId, rowCriteria, colCriteria } = await request.json();
 
-    async function checkCriterion(type: string, value: string) {
+    const checkCriterion = async (type: string, value: string) => {
       if (type === 'club') {
         const { data } = await supabase
           .from('player_careers')
@@ -27,13 +27,13 @@ export async function POST(request: Request) {
         return data && data.length > 0;
       }
       return false;
-    }
+    };
 
     const satisfiesRow = await checkCriterion(rowCriteria.type, rowCriteria.value);
     const satisfiesCol = await checkCriterion(colCriteria.type, colCriteria.value);
 
     return NextResponse.json({ success: true, valid: satisfiesRow && satisfiesCol });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ success: false, error: 'Errore durante la verifica' }, { status: 500 });
   }
 }
