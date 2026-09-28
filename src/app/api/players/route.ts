@@ -16,33 +16,34 @@ export async function GET(request: Request) {
     const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error("Supabase keys missing!");
-      return NextResponse.json({ players: [], error: "Missing env vars" });
+      console.error("Variabili d'ambiente Supabase mancanti!");
+      return NextResponse.json({ players: [], error: 'Missing env vars' }, { status: 500 });
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Cerca la stringa sia nella colonna 'player' che nella colonna 'name'
+    // Cerca nella colonna 'player' del CSV
     const { data, error } = await supabase
       .from('players')
       .select('*')
-      .or(`player.ilike.%${query}%,name.ilike.%${query}%`)
+      .ilike('player', `%${query}%`)
       .limit(10);
 
     if (error) {
-      console.error("Supabase error:", error);
-      throw error;
+      console.error('Errore Supabase:', error.message);
+      return NextResponse.json({ players: [], error: error.message }, { status: 500 });
     }
 
-    const players = (data || []).map((p) => ({
-      id: p.tmid || p.player_id || p.id,
+    const players = (data || []).map((p: Record<string, string>) => ({
+      id: p.tmid || p.player_id || String(p.id),
       name: p.player || p.name || 'Sconosciuto',
-      nationality: p.nationality || ''
+      nationality: p.nationality || '',
     }));
 
     return NextResponse.json({ players });
-  } catch (err) {
-    console.error("API Route Error:", err);
-    return NextResponse.json({ players: [] }, { status: 500 });
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('API Route Error:', errorMessage);
+    return NextResponse.json({ players: [], error: errorMessage }, { status: 500 });
   }
 }
