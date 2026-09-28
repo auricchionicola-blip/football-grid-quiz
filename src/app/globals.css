@@ -3,8 +3,8 @@
 @import "tailwindcss/utilities";
 
 :root {
-  --background: #0b1329;
-  --foreground: #f8fafc;
+  --background: #f1f5f9;
+  --foreground: #0f172a;
 }
 
 body {
