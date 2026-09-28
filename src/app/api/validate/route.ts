@@ -1,17 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Forza la route ad essere eseguita sempre sul server dinamicamente
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    const supabaseUrl = process.env.SUPABASE_URL || '';
-    const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       return NextResponse.json(
-        { success: false, error: 'Variabili di ambiente Supabase non configurate' },
+        { success: false, error: 'Variabili Supabase mancanti' },
         { status: 500 }
       );
     }
