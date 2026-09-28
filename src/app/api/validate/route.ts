@@ -3,37 +3,55 @@ import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q') || '';
-
-    if (!query || query.length < 2) {
-      return NextResponse.json({ players: [] });
-    }
-
     const supabaseUrl = process.env.SUPABASE_URL || '';
     const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
+    
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json({ success: false, error: 'Variabili d\'ambiente mancanti' }, { status: 500 });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const { playerId, rowCriteria, colCriteria } = await request.json();
 
-    // Cerca tra i calciatori importati dal CSV
-    const { data, error } = await supabase
-      .from('players')
-      .select('tmid, player, nationality')
-      .ilike('player', `%${query}%`)
-      .limit(10);
+    const checkCriterion = async (criterion: { type: string; value: string }) => {
+      if (criterion.type === 'club') {
+        // Cerca se il giocatore ha giocato per il club nei trasferimenti (sia da che verso il club)
+        const { data, error } = await supabase
+          .from('player_careers')
+          .select('id')
+          .eq('player_id', playerId)
+          .or(`from_club_name.ilike.%${criterion.value}%,to_club_name.ilike.%${criterion.value}%`)
+          .limit(1);
 
-    if (error) throw error;
+        if (error) console.error(error);
+        return data && data.length > 0;
+      } 
+      
+      if (criterion.type === 'nationality') {
+        const { data, error } = await supabase
+          .from('players')
+          .select('id')
+          .eq('tmid', playerId)
+          .ilike('nationality', `%${criterion.value}%`)
+          .limit(1);
 
-    // Formattazione coerente per il frontend
-    const players = (data || []).map((p) => ({
-      id: p.tmid,
-      name: p.player,
-      nationality: p.nationality
-    }));
+        if (error) console.error(error);
+        return data && data.length > 0;
+      }
 
-    return NextResponse.json({ players });
-  } catch {
-    return NextResponse.json({ players: [] }, { status: 500 });
+      return false;
+    };
+
+    const satisfiesRow = await checkCriterion(rowCriteria);
+    const satisfiesCol = await checkCriterion(colCriteria);
+
+    return NextResponse.json({ 
+      success: true, 
+      valid: satisfiesRow && satisfiesCol 
+    });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: 'Errore interno del server' }, { status: 500 });
   }
 }
