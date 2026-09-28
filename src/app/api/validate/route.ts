@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
     
     if (!supabaseUrl || !supabaseKey) {
-      return NextResponse.json({ success: false, error: 'Variabili d\'ambiente mancanti' }, { status: 500 });
+      return NextResponse.json({ success: false, error: 'Variabili di ambiente mancanti' }, { status: 500 });
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -17,7 +17,6 @@ export async function POST(request: Request) {
 
     const checkCriterion = async (criterion: { type: string; value: string }) => {
       if (criterion.type === 'club') {
-        // Cerca se il giocatore ha giocato per il club nei trasferimenti (sia da che verso il club)
         const { data, error } = await supabase
           .from('player_careers')
           .select('id')
@@ -51,7 +50,7 @@ export async function POST(request: Request) {
       success: true, 
       valid: satisfiesRow && satisfiesCol 
     });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ success: false, error: 'Errore interno del server' }, { status: 500 });
   }
 }
